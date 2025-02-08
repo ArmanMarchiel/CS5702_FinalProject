@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import MovieCharts from './MovieCharts';
@@ -13,6 +12,7 @@ const App = () => {
     franchise: ''
   });
 
+  // Utility functions for data parsing
   const parseCurrency = (value) => {
     if (!value) return 0;
     return parseFloat(value.replace(/[$,]/g, '')) || 0;
@@ -21,62 +21,75 @@ const App = () => {
   const parseCast = (castString) => {
     if (!castString) return [];
     return castString.replace(/^"|"$/g, '')
-                    .split(',')
-                    .map(actor => actor.trim());
+                     .split(',')
+                     .map(actor => actor.trim());
   };
 
+  // Data loading effect
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Adjusted path for GitHub Pages deployment
-        const csvPath = process.env.NODE_ENV === 'production'
-          ? '/CS5702_FinalProject/movie_database.csv'
-          : '/movie_database.csv';
+    const loadMovieData = async () => {
+      // Attempt multiple paths for CSV
+      const possiblePaths = [
+        '/CS5702_FinalProject/movie_database.csv',
+        '/movie_database.csv',
+        'movie_database.csv'
+      ];
 
-        const response = await fetch(csvPath);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const text = await response.text();
-        
-        Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            const processedData = results.data.map(movie => ({
-              ...movie,
-              roi: parseCurrency(movie['Adjusted Budget']) > 0 ? 
-                ((parseCurrency(movie['Adjusted International Box Office']) / 
-                (parseCurrency(movie['Adjusted Budget']) * 2.5) * 100) - 100) : -100,
-              castList: parseCast(movie.Cast)
-            }));
-            console.log("Sample processed movie:", processedData[0]);
-            setMovieData(processedData);
-            setLoading(false);
-          },
-          error: (error) => {
-            console.error('Parse error:', error);
-            setError(`Failed to parse the movie database: ${error.message}`);
-            setLoading(false);
+      for (const path of possiblePaths) {
+        try {
+          console.log(`Attempting to load CSV from: ${path}`);
+          
+          const response = await fetch(path);
+          
+          if (!response.ok) {
+            console.log(`Failed to fetch from ${path}. Status: ${response.status}`);
+            continue;
           }
-        });
-      } catch (error) {
-        console.error('Load error details:', error);
-        setError(`Failed to load the movie database: ${error.message}`);
+
+          const text = await response.text();
+          
+          Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.data && results.data.length > 0) {
+                const processedData = results.data.map(movie => ({
+                  ...movie,
+                  roi: parseCurrency(movie['Adjusted Budget']) > 0 ? 
+                    ((parseCurrency(movie['Adjusted International Box Office']) / 
+                    (parseCurrency(movie['Adjusted Budget']) * 2.5) * 100) - 100) : -100,
+                  castList: parseCast(movie.Cast)
+                }));
+
+                setMovieData(processedData);
+                setLoading(false);
+                return;
+              }
+            },
+            error: (error) => {
+              console.error('Parse error:', error);
+            }
+          });
+
+          break;
+        } catch (error) {
+          console.error(`Error loading from ${path}:`, error);
+        }
+      }
+
+      if (movieData.length === 0) {
+        setError('Could not load movie database');
         setLoading(false);
       }
     };
 
-    loadData();
+    loadMovieData();
   }, []);
 
-
-  // Calculate actor performance
+  // Rest of your existing logic remains the same...
   const calculateActorMetrics = (data) => {
-    // Create a map to store actor statistics
     const actorStats = new Map();
 
-    // Process each movie
     data.forEach(movie => {
       if (!movie.castList) return;
       
@@ -98,15 +111,13 @@ const App = () => {
       });
     });
 
-    // Convert to array and sort
     const actorArray = Array.from(actorStats.entries())
-      .filter(([_, stats]) => stats.movies >= 2) // Only include actors with 2+ movies
+      .filter(([_, stats]) => stats.movies >= 2)
       .map(([actor, stats]) => ({
         actor,
         ...stats
       }));
 
-    // Sort by average ROI
     const sortedByROI = [...actorArray].sort((a, b) => b.averageROI - a.averageROI);
 
     return {
@@ -115,7 +126,6 @@ const App = () => {
     };
   };
 
-  // Filter data based on selections
   const filteredData = React.useMemo(() => {
     return movieData.filter(movie => {
       if (filters.studio && movie.Studio !== filters.studio) return false;
@@ -124,7 +134,6 @@ const App = () => {
     });
   }, [movieData, filters]);
 
-  // Calculate metrics
   const metrics = React.useMemo(() => {
     if (!filteredData.length) return {
       averageROI: 0,
@@ -140,6 +149,7 @@ const App = () => {
     };
   }, [filteredData]);
 
+  // Render logic
   if (loading) return <div className="loading">Loading movie database...</div>;
   if (error) return <div className="error">{error}</div>;
 

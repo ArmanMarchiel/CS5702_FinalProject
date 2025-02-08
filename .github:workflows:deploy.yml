@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]  # or master, depending on your default branch
+    branches: [main]
 
 jobs:
   build-and-deploy:
@@ -15,6 +15,10 @@ jobs:
           node-version: '18'
       - run: npm ci
       - run: npm run build
+      - name: Copy public files to dist
+        run: |
+          mkdir -p dist
+          cp -r public/* dist/
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
