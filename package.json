@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "papaparse": "^5.5.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vega": "^5.31.0",
+    "vega-embed": "^6.29.0",
+    "vega-lite": "^5.23.0",
+    "vite": "^6.1.0"
+  },
+  "homepage": "https://ArmanMarchiel.github.io/CS5702_FinalProject",
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
+}
