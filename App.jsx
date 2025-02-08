@@ -20,8 +20,7 @@ const App = () => {
 
   const parseCast = (castString) => {
     if (!castString) return [];
-    // Remove outer quotes and split by comma, then clean each name
-    return castString.replace(/^"|"$/g, '') // Remove outer quotes
+    return castString.replace(/^"|"$/g, '')
                     .split(',')
                     .map(actor => actor.trim());
   };
@@ -29,7 +28,12 @@ const App = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch('/movie_database.csv');
+        // Adjusted path for GitHub Pages deployment
+        const csvPath = process.env.NODE_ENV === 'production'
+          ? '/CS5702_FinalProject/movie_database.csv'
+          : '/movie_database.csv';
+
+        const response = await fetch(csvPath);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -65,6 +69,7 @@ const App = () => {
 
     loadData();
   }, []);
+
 
   // Calculate actor performance
   const calculateActorMetrics = (data) => {
